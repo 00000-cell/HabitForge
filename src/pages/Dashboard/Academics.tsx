@@ -12,7 +12,33 @@ export default function Academics() {
   const [isBreak, setIsBreak] = useState(false);
 
   // Notes State
-  const [notes, setNotes] = useState('Chapter 4: Advanced React Patterns\n\n- Context API for global state\n- Custom hooks for reusability\n- Render props vs Hooks');
+  const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/notes')
+      .then(res => res.json())
+      .then(data => {
+        if (data.notes) setNotes(data.notes);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  const handleSaveNotes = async () => {
+    setIsSaving(true);
+    try {
+      await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+      });
+      addXp(5);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Exam Countdown (mock)
   const examDate = new Date();

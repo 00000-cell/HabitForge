@@ -18,7 +18,7 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardLayout() {
-  const { xp, level, xpToNextLevel, showConfetti } = useAppContext();
+  const { xp, level, xpToNextLevel, showConfetti, userName, avatarUrl } = useAppContext();
   const location = useLocation();
 
   // Calculate progress percentage
@@ -100,23 +100,14 @@ export default function DashboardLayout() {
             <span className="text-lg font-bold text-white">HabitForge</span>
           </div>
 
-          <div className="hidden md:flex items-center bg-card border border-gray-800 rounded-xl px-3 py-2 w-64">
-            <Search className="w-4 h-4 text-muted mr-2" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="bg-transparent border-none text-sm text-white focus:outline-none w-full"
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="relative text-muted hover:text-white transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full" />
-            </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center cursor-pointer shadow-[0_0_10px_rgba(139,92,246,0.3)]">
-              <span className="text-sm font-bold text-white">JD</span>
-            </div>
+          <div className="flex items-center gap-4 ml-auto">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-primary shadow-[0_0_10px_rgba(139,92,246,0.3)]" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)]">
+                <span className="text-sm font-bold text-white">{userName ? userName.substring(0, 2).toUpperCase() : 'U'}</span>
+              </div>
+            )}
           </div>
         </header>
 

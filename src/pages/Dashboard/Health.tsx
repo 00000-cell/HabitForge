@@ -6,13 +6,23 @@ import ProgressRing from '../../components/ProgressRing';
 
 export default function Health() {
   const { addXp } = useAppContext();
-  const [steps, setSteps] = useState(4250);
+  const [steps, setSteps] = useState(8432);
   const goalSteps = 10000;
   
-  const [waterGlasses, setWaterGlasses] = useState(3);
+  const [waterGlasses, setWaterGlasses] = useState(0);
   const goalWater = 8;
-
   const [showWaterReminder, setShowWaterReminder] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then(res => res.json())
+      .then(data => {
+        if (data.waterIntake !== undefined) {
+          setWaterGlasses(data.waterIntake);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   // Simulate step counting
   useEffect(() => {
@@ -30,10 +40,21 @@ export default function Health() {
     return () => clearInterval(interval);
   }, []);
 
-  const addWater = () => {
+  const handleAddWater = async () => {
     if (waterGlasses < goalWater) {
-      setWaterGlasses(w => w + 1);
-      addXp(5); // Small XP boost for healthy habits
+      const newAmount = waterGlasses + 1;
+      setWaterGlasses(newAmount);
+      addXp(5); // 5 XP per glass
+      
+      if (newAmount === goalWater) {
+        triggerConfetti();
+      }
+
+      try {
+        await fetch('/api/health/water', { method: 'POST' });
+      } catch (err) {
+        console.error(err);
+      }
       setShowWaterReminder(false);
     }
   };
@@ -58,7 +79,7 @@ export default function Health() {
             </div>
             <div className="flex gap-2 ml-4">
               <button 
-                onClick={addWater}
+                onClick={handleAddWater}
                 className="px-3 py-1.5 bg-white text-[#0ea5e9] rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors"
               >
                 Drank It
@@ -128,7 +149,7 @@ export default function Health() {
                 <span className="text-muted ml-2">/ {goalWater} glasses</span>
               </div>
               <button 
-                onClick={addWater}
+                onClick={handleAddWater}
                 disabled={waterGlasses >= goalWater}
                 className="w-12 h-12 rounded-full bg-[#0ea5e9]/20 text-[#0ea5e9] flex items-center justify-center hover:bg-[#0ea5e9] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

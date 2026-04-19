@@ -19,12 +19,37 @@ public:
     void addXp(int amount) {
         std::lock_guard<std::mutex> lock(mutex_);
         user_.xp += amount;
-        
-        // Level calculation logic
-        int xp = user_.xp;
-        if (xp < 100) user_.level = 1;
-        else if (xp < 300) user_.level = 2;
-        else user_.level = ((xp - 300) / 300) + 3;
+        updateLevelUnsafe();
+    }
+
+    std::string getNotes() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return user_.notes;
+    }
+
+    void setNotes(const std::string& notes) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        user_.notes = notes;
+    }
+
+    int getWaterIntake() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return user_.waterIntake;
+    }
+
+    void incrementWaterIntake() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (user_.waterIntake < 8) {
+            user_.waterIntake++;
+            user_.xp += 5;
+            updateLevelUnsafe();
+        }
+    }
+
+    void updateProfile(const std::string& name, const std::string& avatarUrl) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        user_.name = name;
+        user_.avatarUrl = avatarUrl;
     }
 
     std::vector<Habit> getHabits() {
@@ -49,7 +74,7 @@ public:
                     habit.streak = std::max(0, habit.streak - 1);
                     user_.xp -= 10;
                 }
-                updateLevel();
+                updateLevelUnsafe();
                 return habit;
             }
         }
@@ -78,17 +103,31 @@ public:
                     int xpLost = (goal.type == "weekly") ? 25 : (goal.type == "monthly") ? 100 : 500;
                     user_.xp -= xpLost;
                 }
-                updateLevel();
+                updateLevelUnsafe();
                 return goal;
             }
         }
         return Goal{};
     }
 
+    bool deleteGoal(const std::string& id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (auto it = goals_.begin(); it != goals_.end(); ++it) {
+            if (it->id == id) {
+                int xpGained = (it->type == "weekly") ? 25 : (it->type == "monthly") ? 100 : 500;
+                user_.xp += xpGained;
+                updateLevelUnsafe();
+                goals_.erase(it);
+                return true;
+            }
+        }
+        return false;
+    }
+
 private:
     Store() {
         // Initial Mock Data
-        user_ = {150, 2, "John Doe"};
+        user_ = {150, 2, "John Doe", "", 0, ""};
         
         habits_ = {
             {"1", "Morning Workout", 12, true, "#8B5CF6"},
@@ -104,7 +143,7 @@ private:
         };
     }
 
-    void updateLevel() {
+    void updateLevelUnsafe() {
         int xp = user_.xp;
         if (xp < 100) user_.level = 1;
         else if (xp < 300) user_.level = 2;

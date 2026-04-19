@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Shield, Camera, Edit2, LogOut } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { xp, level, xpToNextLevel } = useAppContext();
+  const { xp, level, xpToNextLevel, userName, avatarUrl, setUserName, setAvatarUrl } = useAppContext();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john@example.com',
-    bio: 'Building better habits every day.',
-  });
+  const [editName, setEditName] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
 
-  const handleSave = () => {
-    setIsEditing(false);
+  useEffect(() => {
+    setEditName(userName || '');
+    setEditAvatar(avatarUrl || '');
+  }, [userName, avatarUrl]);
+
+  const handleSaveProfile = async () => {
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName, avatarUrl: editAvatar })
+      });
+      if (res.ok) {
+        setUserName(editName);
+        setAvatarUrl(editAvatar);
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleLogout = () => {
@@ -31,21 +45,21 @@ export default function Profile() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Left Column: Avatar & Quick Stats */}
         <div className="md:col-span-1 space-y-6">
           <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl text-center">
             <div className="relative inline-block mb-4 group cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] mx-auto overflow-hidden">
-                <span className="text-3xl font-bold text-white tracking-widest">
-                  {profile.name.split(' ').map(n => n[0]).join('')}
-                </span>
-              </div>
-              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="w-6 h-6 text-white" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-bold text-white tracking-widest">
+                    {(userName || 'U')[0].toUpperCase()}
+                  </span>
+                )}
               </div>
             </div>
             
-            <h2 className="text-xl font-bold text-white mb-1">{profile.name}</h2>
+            <h2 className="text-xl font-bold text-white mb-1">{userName || 'Habit User'}</h2>
             <p className="text-muted text-sm mb-6">Level {level} Explorer</p>
             
             <div className="bg-background border border-gray-800 rounded-xl p-4">
@@ -77,7 +91,7 @@ export default function Profile() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">Personal Information</h3>
               <button 
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
                 className="p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
               >
                 {isEditing ? 'Save' : <Edit2 className="w-5 h-5" />}
@@ -86,50 +100,34 @@ export default function Profile() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-muted mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-muted mb-1">Display Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
                     type="text"
                     disabled={!isEditing}
-                    value={profile.name}
-                    onChange={e => setProfile({...profile, name: e.target.value})}
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
                     className="w-full bg-background border border-gray-700 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-muted mb-1">Email Address</label>
+                <label className="block text-sm font-medium text-muted mb-1">Avatar Image URL</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
-                    type="email"
+                    type="text"
                     disabled={!isEditing}
-                    value={profile.email}
-                    onChange={e => setProfile({...profile, email: e.target.value})}
+                    value={editAvatar}
+                    onChange={e => setEditAvatar(e.target.value)}
+                    placeholder="https://example.com/my-photo.jpg"
                     className="w-full bg-background border border-gray-700 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1">Bio</label>
-                <textarea
-                  disabled={!isEditing}
-                  value={profile.bio}
-                  onChange={e => setProfile({...profile, bio: e.target.value})}
-                  className="w-full bg-background border border-gray-700 text-white rounded-xl p-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50 resize-none h-24"
-                />
-              </div>
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-gray-800">
-              <h3 className="text-lg font-semibold text-white mb-4">Security</h3>
-              <button className="flex items-center gap-2 px-4 py-2 bg-background border border-gray-700 text-white rounded-xl hover:border-gray-500 transition-colors">
-                <Shield className="w-5 h-5 text-muted" />
-                Change Password
-              </button>
             </div>
           </div>
         </div>

@@ -121,6 +121,46 @@ int main() {
         return crow::response(x);
     });
 
+    CROW_ROUTE(app, "/api/goals/<string>").methods(crow::HTTPMethod::DELETE)([](const std::string& id) {
+        if (Store::getInstance().deleteGoal(id)) {
+            return crow::response(200);
+        }
+        return crow::response(404);
+    });
+
+    CROW_ROUTE(app, "/api/notes").methods(crow::HTTPMethod::GET)([]() {
+        crow::json::wvalue x;
+        x["notes"] = Store::getInstance().getNotes();
+        return crow::response(x);
+    });
+
+    CROW_ROUTE(app, "/api/notes").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
+        auto body = crow::json::load(req.body);
+        if (!body || !body.has("notes")) return crow::response(400);
+        Store::getInstance().setNotes(body["notes"].s());
+        return crow::response(200);
+    });
+
+    CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::GET)([]() {
+        crow::json::wvalue x;
+        x["waterIntake"] = Store::getInstance().getWaterIntake();
+        return crow::response(x);
+    });
+
+    CROW_ROUTE(app, "/api/health/water").methods(crow::HTTPMethod::POST)([]() {
+        Store::getInstance().incrementWaterIntake();
+        return crow::response(200);
+    });
+
+    CROW_ROUTE(app, "/api/user/profile").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
+        auto body = crow::json::load(req.body);
+        if (!body) return crow::response(400);
+        std::string name = body.has("name") ? body["name"].s() : "";
+        std::string avatarUrl = body.has("avatarUrl") ? body["avatarUrl"].s() : "";
+        Store::getInstance().updateProfile(name, avatarUrl);
+        return crow::response(200);
+    });
+
     // Static files and SPA fallback
     CROW_CATCHALL_ROUTE(app)([](const crow::request& req) {
         std::string req_path = req.url;

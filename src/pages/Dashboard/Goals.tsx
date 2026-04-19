@@ -25,23 +25,17 @@ export default function Goals() {
   }, []);
 
   const toggleGoal = (id: string) => {
-    fetch(`/api/goals/${id}/toggle`, { method: 'PUT' })
-      .then(res => res.json())
-      .then(updatedGoal => {
-        setGoals(prev => prev.map(goal => {
-          if (goal.id === id) {
-            if (updatedGoal.completed) {
-              const xpGained = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
-              addXp(xpGained);
-              triggerConfetti();
-            } else {
-              const xpLost = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
-              addXp(-xpLost);
-            }
-            return { ...goal, completed: updatedGoal.completed };
+    fetch(`/api/goals/${id}`, { method: 'DELETE' })
+      .then(res => {
+        if (res.ok) {
+          const goal = goals.find(g => g.id === id);
+          if (goal) {
+            const xpGained = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
+            addXp(xpGained);
+            triggerConfetti();
           }
-          return goal;
-        }));
+          setGoals(prev => prev.filter(g => g.id !== id));
+        }
       })
       .catch(err => console.error(err));
   };

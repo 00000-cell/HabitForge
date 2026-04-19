@@ -8,6 +8,10 @@ interface AppContextType {
   xpToNextLevel: number;
   showConfetti: boolean;
   triggerConfetti: () => void;
+  userName: string;
+  avatarUrl: string;
+  setUserName: (name: string) => void;
+  setAvatarUrl: (url: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -15,6 +19,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [xp, setXp] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
     fetch('/api/user/profile')
@@ -22,6 +28,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       .then(data => {
         if (data.xp !== undefined) {
           setXp(data.xp);
+        }
+        if (data.name) {
+          setUserName(data.name);
+        }
+        if (data.avatarUrl) {
+          setAvatarUrl(data.avatarUrl);
         }
       })
       .catch(err => console.error('Failed to fetch profile', err));
@@ -51,7 +63,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AppContext.Provider value={{ xp, addXp, level, xpToNextLevel, showConfetti, triggerConfetti }}>
+    <AppContext.Provider value={{
+      xp,
+      level,
+      xpToNextLevel,
+      showConfetti,
+      addXp,
+      triggerConfetti,
+      userName,
+      avatarUrl,
+      setUserName,
+      setAvatarUrl
+    }}>
       {children}
     </AppContext.Provider>
   );

@@ -21,4 +21,7 @@ struct User {
     int xp;
     int level;
     std::string name;
+    std::string notes;
+    int waterIntake;
+    std::string avatarUrl;
 };
