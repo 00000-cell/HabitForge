@@ -5,7 +5,7 @@ import { useAppContext } from '../../context/AppContext';
 import ProgressRing from '../../components/ProgressRing';
 
 export default function Health() {
-  const { addXp } = useAppContext();
+  const { addXp, triggerConfetti } = useAppContext();
   const [steps, setSteps] = useState(8432);
   const goalSteps = 10000;
   
