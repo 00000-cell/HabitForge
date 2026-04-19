@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: habitforge
+    env: docker
+    plan: free
+    autoDeploy: true
