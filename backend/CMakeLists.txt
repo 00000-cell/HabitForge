@@ -42,6 +42,8 @@ target_link_libraries(server
     PRIVATE
     Crow::Crow
     Threads::Threads
-    ws2_32
-    wsock32
 )
+
+if(WIN32)
+    target_link_libraries(server PRIVATE ws2_32 wsock32)
+endif()
