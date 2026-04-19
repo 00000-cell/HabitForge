@@ -155,8 +155,8 @@ int main() {
     CROW_ROUTE(app, "/api/user/profile").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
         auto body = crow::json::load(req.body);
         if (!body) return crow::response(400);
-        std::string name = body.has("name") ? body["name"].s() : "";
-        std::string avatarUrl = body.has("avatarUrl") ? body["avatarUrl"].s() : "";
+        std::string name = body.has("name") ? std::string(body["name"].s()) : std::string("");
+        std::string avatarUrl = body.has("avatarUrl") ? std::string(body["avatarUrl"].s()) : std::string("");
         Store::getInstance().updateProfile(name, avatarUrl);
         return crow::response(200);
     });
