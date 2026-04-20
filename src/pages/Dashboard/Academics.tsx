@@ -6,10 +6,11 @@ import { useAppContext } from '../../context/AppContext';
 export default function Academics() {
   const { addXp } = useAppContext();
   
-  // Timer State
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes
+  const [studyDuration, setStudyDuration] = useState(25);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
+  const [isEditingTime, setIsEditingTime] = useState(false);
 
   // Notes State
   const [notes, setNotes] = useState('');
@@ -61,21 +62,31 @@ export default function Academics() {
         setTimeLeft(5 * 60); // 5 min break
       } else {
         setIsBreak(false);
-        setTimeLeft(25 * 60); // 25 min study
+        setTimeLeft(studyDuration * 60);
       }
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, isBreak, addXp]);
+  }, [isActive, timeLeft, isBreak, addXp, studyDuration]);
 
   const toggleTimer = () => setIsActive(!isActive);
   
   const resetTimer = () => {
     setIsActive(false);
     setIsBreak(false);
-    setTimeLeft(25 * 60);
+    setTimeLeft(studyDuration * 60);
+  };
+
+  const handleStudyDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (!isNaN(val) && val > 0) {
+      setStudyDuration(val);
+      if (!isActive && !isBreak) {
+        setTimeLeft(val * 60);
+      }
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -84,7 +95,7 @@ export default function Academics() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const progress = isBreak ? 100 - ((timeLeft / (5 * 60)) * 100) : 100 - ((timeLeft / (25 * 60)) * 100);
+  const progress = isBreak ? 100 - ((timeLeft / (5 * 60)) * 100) : 100 - ((timeLeft / (studyDuration * 60)) * 100);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -110,11 +121,28 @@ export default function Academics() {
             <div className="flex items-center justify-center gap-2 text-primary mb-4 mt-2">
               <BookOpen className="w-5 h-5" />
               <span className="font-semibold">{isBreak ? 'Break Time' : 'Focus Session'}</span>
+              {!isBreak && !isActive && (
+                <button onClick={() => setIsEditingTime(!isEditingTime)} className="ml-2 text-muted hover:text-primary transition-colors">
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
             </div>
             
-            <div className="text-6xl font-bold text-white mb-8 tracking-tighter tabular-nums">
-              {formatTime(timeLeft)}
-            </div>
+            {isEditingTime && !isActive && !isBreak ? (
+              <div className="flex justify-center items-center mb-8 gap-2">
+                <input 
+                  type="number" 
+                  value={studyDuration}
+                  onChange={handleStudyDurationChange}
+                  className="w-20 bg-background border border-primary text-white rounded-xl px-2 py-1 text-center text-3xl font-bold focus:outline-none"
+                />
+                <span className="text-xl text-muted font-medium">min</span>
+              </div>
+            ) : (
+              <div className="text-6xl font-bold text-white mb-8 tracking-tighter tabular-nums">
+                {formatTime(timeLeft)}
+              </div>
+            )}
 
             <div className="flex items-center justify-center gap-4">
               <button 

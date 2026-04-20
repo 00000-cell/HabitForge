@@ -18,25 +18,34 @@ export default function Habits() {
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
+  const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
+  
+  // Format YYYY-MM-DD for the API
+  const getFormatDate = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedDateStr = getFormatDate(selectedDate);
+
   useEffect(() => {
-    fetch('/api/habits')
+    fetch(`/api/habits?date=${selectedDateStr}`)
       .then(res => res.json())
       .then(data => setHabits(data))
       .catch(err => console.error(err));
-  }, []);
+  }, [selectedDateStr]);
 
   const completedCount = habits.filter(h => h.completedToday).length;
   const progressPercent = habits.length === 0 ? 0 : Math.round((completedCount / habits.length) * 100);
 
   // Calendar logic
-  const date = new Date();
-  const today = date.getDate();
-  const monthName = date.toLocaleString('default', { month: 'long' });
-  const year = date.getFullYear();
+  const todayDate = new Date();
+  const currentMonthName = currentMonthDate.toLocaleString('default', { month: 'long' });
+  const currentYear = currentMonthDate.getFullYear();
   
   const generateCalendarDays = () => {
-    const daysInMonth = new Date(year, date.getMonth() + 1, 0).getDate();
-    const firstDay = new Date(year, date.getMonth(), 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonthDate.getMonth() + 1, 0).getDate();
+    const firstDay = new Date(currentYear, currentMonthDate.getMonth(), 1).getDay();
     const days = [];
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
@@ -44,8 +53,22 @@ export default function Habits() {
   };
   const calendarDays = generateCalendarDays();
 
+  const prevMonth = () => {
+    setCurrentMonthDate(new Date(currentYear, currentMonthDate.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonthDate(new Date(currentYear, currentMonthDate.getMonth() + 1, 1));
+  };
+
+  const handleDayClick = (day: number | null) => {
+    if (day !== null) {
+      setSelectedDate(new Date(currentYear, currentMonthDate.getMonth(), day));
+    }
+  };
+
   const toggleHabit = (id: string) => {
-    fetch(`/api/habits/${id}/toggle`, { method: 'PUT' })
+    fetch(`/api/habits/${id}/toggle?date=${selectedDateStr}`, { method: 'PUT' })
       .then(res => res.json())
       .then(updatedHabit => {
         setHabits(prev => prev.map(habit => {
@@ -70,13 +93,13 @@ export default function Habits() {
     e.preventDefault();
     if (!newHabitTitle.trim()) return;
 
-    fetch('/api/habits', {
+    fetch(`/api/habits?date=${selectedDateStr}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newHabitTitle })
     }).then(() => {
       // Re-fetch to get the new list
-      return fetch('/api/habits');
+      return fetch(`/api/habits?date=${selectedDateStr}`);
     }).then(res => res.json())
     .then(data => {
       setHabits(data);
@@ -90,7 +113,7 @@ export default function Habits() {
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Today's Habits</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Daily Habits</h1>
           <p className="text-muted">Stay consistent, build your streak.</p>
         </div>
         
@@ -112,7 +135,9 @@ export default function Habits() {
       {/* Habit List */}
       <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Your Routine</h2>
+          <h2 className="text-xl font-semibold text-white">
+            Habits for {selectedDate.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </h2>
           <button 
             onClick={() => setIsAdding(!isAdding)}
             className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
@@ -198,9 +223,17 @@ export default function Habits() {
       <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Monthly Overview</h2>
-          <span className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-lg">
-            {monthName} {year}
-          </span>
+          <div className="flex items-center gap-4">
+            <button onClick={prevMonth} className="p-2 bg-background border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors text-white">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span className="text-primary font-medium bg-primary/10 px-4 py-1.5 rounded-lg min-w-[140px] text-center">
+              {currentMonthName} {currentYear}
+            </span>
+            <button onClick={nextMonth} className="p-2 bg-background border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors text-white">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
         </div>
         
         <div className="grid grid-cols-7 gap-2 mb-2">
@@ -212,19 +245,26 @@ export default function Habits() {
         </div>
         
         <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((day, index) => (
-            <div 
-              key={index} 
-              className={`
-                aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all
-                ${day === null ? 'bg-transparent' : 'bg-background border border-gray-800'}
-                ${day === today ? 'border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] text-primary font-bold' : ''}
-                ${day !== null && day !== today ? 'text-gray-400 hover:border-gray-600 cursor-default' : ''}
-              `}
-            >
-              {day}
-            </div>
-          ))}
+          {calendarDays.map((day, index) => {
+            const isToday = day === todayDate.getDate() && currentMonthDate.getMonth() === todayDate.getMonth() && currentYear === todayDate.getFullYear();
+            const isSelected = day === selectedDate.getDate() && currentMonthDate.getMonth() === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
+            
+            return (
+              <div 
+                key={index} 
+                onClick={() => handleDayClick(day)}
+                className={`
+                  aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all
+                  ${day === null ? 'bg-transparent' : 'bg-background border border-gray-800 cursor-pointer hover:border-gray-600'}
+                  ${isToday && !isSelected ? 'text-primary font-bold border-primary/50' : ''}
+                  ${isSelected ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] text-white font-bold scale-105' : ''}
+                  ${day !== null && !isToday && !isSelected ? 'text-gray-400' : ''}
+                `}
+              >
+                {day}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

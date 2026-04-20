@@ -60,19 +60,19 @@ public:
         user_.avatarUrl = avatarUrl;
     }
 
-    std::vector<Habit> getHabits() {
+    std::vector<Habit> getHabits(const std::string& date) {
         std::lock_guard<std::mutex> lock(mutex_);
-        return habits_;
+        return dailyHabits_[date];
     }
 
-    void addHabit(const Habit& habit) {
+    void addHabit(const std::string& date, const Habit& habit) {
         std::lock_guard<std::mutex> lock(mutex_);
-        habits_.push_back(habit);
+        dailyHabits_[date].push_back(habit);
     }
 
-    Habit toggleHabit(const std::string& id) {
+    Habit toggleHabit(const std::string& date, const std::string& id) {
         std::lock_guard<std::mutex> lock(mutex_);
-        for (auto& habit : habits_) {
+        for (auto& habit : dailyHabits_[date]) {
             if (habit.id == id) {
                 habit.completedToday = !habit.completedToday;
                 if (habit.completedToday) {
@@ -137,7 +137,14 @@ private:
         // Initial Mock Data
         user_ = {150, 2, "John Doe", "", 0, 8, ""};
         
-        habits_ = {
+        // Mock data for today
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+        char buf[100];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d", std::localtime(&in_time_t));
+        std::string today(buf);
+
+        dailyHabits_[today] = {
             {"1", "Morning Workout", 12, true, "#8B5CF6"},
             {"2", "Read 20 pages", 5, false, "#3B82F6"},
             {"3", "Drink 2L Water", 21, false, "#06B6D4"}
@@ -160,6 +167,6 @@ private:
 
     std::mutex mutex_;
     User user_;
-    std::vector<Habit> habits_;
+    std::unordered_map<std::string, std::vector<Habit>> dailyHabits_;
     std::vector<Goal> goals_;
 };

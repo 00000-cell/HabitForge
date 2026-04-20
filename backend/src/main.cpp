@@ -40,8 +40,11 @@ int main() {
     });
 
     // Habits API
-    CROW_ROUTE(app, "/api/habits").methods("GET"_method)([&store]() {
-        auto habits = store.getHabits();
+    CROW_ROUTE(app, "/api/habits").methods("GET"_method)([&store](const crow::request& req) {
+        std::string dateStr = req.url_params.get("date") ? req.url_params.get("date") : "";
+        if (dateStr.empty()) return crow::response(400);
+
+        auto habits = store.getHabits(dateStr);
         std::vector<crow::json::wvalue> json_habits;
         for (const auto& h : habits) {
             crow::json::wvalue x;
@@ -52,10 +55,13 @@ int main() {
             x["color"] = h.color;
             json_habits.push_back(std::move(x));
         }
-        return crow::json::wvalue(json_habits);
+        return crow::response(crow::json::wvalue(json_habits));
     });
 
     CROW_ROUTE(app, "/api/habits").methods("POST"_method)([&store](const crow::request& req) {
+        std::string dateStr = req.url_params.get("date") ? req.url_params.get("date") : "";
+        if (dateStr.empty()) return crow::response(400);
+
         auto x = crow::json::load(req.body);
         if (!x || !x.has("title")) return crow::response(400);
         
@@ -66,12 +72,15 @@ int main() {
         h.completedToday = false;
         h.color = "#8B5CF6"; // Default or randomized
         
-        store.addHabit(h);
+        store.addHabit(dateStr, h);
         return crow::response(201);
     });
 
-    CROW_ROUTE(app, "/api/habits/<string>/toggle").methods("PUT"_method)([&store](std::string id) {
-        auto updated = store.toggleHabit(id);
+    CROW_ROUTE(app, "/api/habits/<string>/toggle").methods("PUT"_method)([&store](const crow::request& req, std::string id) {
+        std::string dateStr = req.url_params.get("date") ? req.url_params.get("date") : "";
+        if (dateStr.empty()) return crow::response(400);
+
+        auto updated = store.toggleHabit(dateStr, id);
         if (updated.id.empty()) return crow::response(404);
         
         crow::json::wvalue x;
