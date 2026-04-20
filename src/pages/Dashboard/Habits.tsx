@@ -28,6 +28,22 @@ export default function Habits() {
   const completedCount = habits.filter(h => h.completedToday).length;
   const progressPercent = habits.length === 0 ? 0 : Math.round((completedCount / habits.length) * 100);
 
+  // Calendar logic
+  const date = new Date();
+  const today = date.getDate();
+  const monthName = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+  
+  const generateCalendarDays = () => {
+    const daysInMonth = new Date(year, date.getMonth() + 1, 0).getDate();
+    const firstDay = new Date(year, date.getMonth(), 1).getDay();
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+    return days;
+  };
+  const calendarDays = generateCalendarDays();
+
   const toggleHabit = (id: string) => {
     fetch(`/api/habits/${id}/toggle`, { method: 'PUT' })
       .then(res => res.json())
@@ -175,6 +191,40 @@ export default function Habits() {
               <p>No habits yet. Start building your routine!</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Monthly Calendar */}
+      <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-white">Monthly Overview</h2>
+          <span className="text-primary font-medium bg-primary/10 px-3 py-1 rounded-lg">
+            {monthName} {year}
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+            <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-2">
+          {calendarDays.map((day, index) => (
+            <div 
+              key={index} 
+              className={`
+                aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all
+                ${day === null ? 'bg-transparent' : 'bg-background border border-gray-800'}
+                ${day === today ? 'border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] text-primary font-bold' : ''}
+                ${day !== null && day !== today ? 'text-gray-400 hover:border-gray-600 cursor-default' : ''}
+              `}
+            >
+              {day}
+            </div>
+          ))}
         </div>
       </div>
     </div>

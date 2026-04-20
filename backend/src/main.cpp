@@ -144,6 +144,7 @@ int main() {
     CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::GET)([]() {
         crow::json::wvalue x;
         x["waterIntake"] = Store::getInstance().getWaterIntake();
+        x["waterGoal"] = Store::getInstance().getWaterGoal();
         return crow::response(x);
     });
 
@@ -151,6 +152,15 @@ int main() {
         Store::getInstance().incrementWaterIntake();
         return crow::response(200);
     });
+
+    CROW_ROUTE(app, "/api/health/water-goal").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
+        auto body = crow::json::load(req.body);
+        if (!body || !body.has("goal")) return crow::response(400);
+        Store::getInstance().setWaterGoal(body["goal"].i());
+        return crow::response(200);
+    });
+
+
 
     CROW_ROUTE(app, "/api/user/profile").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
         auto body = crow::json::load(req.body);

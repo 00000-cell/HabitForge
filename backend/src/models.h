@@ -23,5 +23,6 @@ struct User {
     std::string name;
     std::string notes;
     int waterIntake;
+    int waterGoal;
     std::string avatarUrl;
 };

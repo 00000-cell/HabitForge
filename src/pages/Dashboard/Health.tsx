@@ -10,7 +10,8 @@ export default function Health() {
   const goalSteps = 10000;
   
   const [waterGlasses, setWaterGlasses] = useState(0);
-  const goalWater = 8;
+  const [goalWater, setGoalWater] = useState(8);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [showWaterReminder, setShowWaterReminder] = useState(false);
 
   useEffect(() => {
@@ -19,6 +20,9 @@ export default function Health() {
       .then(data => {
         if (data.waterIntake !== undefined) {
           setWaterGlasses(data.waterIntake);
+        }
+        if (data.waterGoal !== undefined) {
+          setGoalWater(data.waterGoal);
         }
       })
       .catch(err => console.error(err));
@@ -41,21 +45,34 @@ export default function Health() {
   }, []);
 
   const handleAddWater = async () => {
-    if (waterGlasses < goalWater) {
-      const newAmount = waterGlasses + 1;
-      setWaterGlasses(newAmount);
-      addXp(5); // 5 XP per glass
-      
-      if (newAmount === goalWater) {
-        triggerConfetti();
-      }
+    const newAmount = waterGlasses + 1;
+    setWaterGlasses(newAmount);
+    addXp(5); // 5 XP per glass
+    
+    if (newAmount === goalWater) {
+      triggerConfetti();
+    }
 
-      try {
-        await fetch('/api/health/water', { method: 'POST' });
-      } catch (err) {
-        console.error(err);
-      }
-      setShowWaterReminder(false);
+    try {
+      await fetch('/api/health/water', { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+    setShowWaterReminder(false);
+  };
+
+  const saveWaterGoal = async (newGoal: number) => {
+    if (newGoal < 1) newGoal = 1;
+    setGoalWater(newGoal);
+    setIsEditingGoal(false);
+    try {
+      await fetch('/api/health/water-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: newGoal })
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -144,20 +161,33 @@ export default function Health() {
               <h3 className="font-semibold text-white">Hydration</h3>
             </div>
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex items-end gap-2">
                 <span className="text-4xl font-bold text-white">{waterGlasses}</span>
-                <span className="text-muted ml-2">/ {goalWater} glasses</span>
+                <div className="flex items-center text-muted mb-1 cursor-pointer hover:text-white transition-colors" onClick={() => setIsEditingGoal(true)}>
+                  <span className="ml-1 mr-1">/</span>
+                  {isEditingGoal ? (
+                    <input 
+                      type="number" 
+                      autoFocus
+                      className="w-16 bg-background border border-primary text-white rounded px-1 outline-none text-sm"
+                      defaultValue={goalWater}
+                      onBlur={(e) => saveWaterGoal(parseInt(e.target.value))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveWaterGoal(parseInt((e.target as HTMLInputElement).value)) }}
+                    />
+                  ) : (
+                    <span>{goalWater} glasses</span>
+                  )}
+                </div>
               </div>
               <button 
                 onClick={handleAddWater}
-                disabled={waterGlasses >= goalWater}
-                className="w-12 h-12 rounded-full bg-[#0ea5e9]/20 text-[#0ea5e9] flex items-center justify-center hover:bg-[#0ea5e9] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-12 h-12 rounded-full bg-[#0ea5e9]/20 text-[#0ea5e9] flex items-center justify-center hover:bg-[#0ea5e9] hover:text-white transition-colors"
               >
                 <PlusIcon />
               </button>
             </div>
             <div className="flex gap-1 mt-4">
-              {Array.from({ length: goalWater }).map((_, i) => (
+              {Array.from({ length: Math.max(goalWater, waterGlasses) }).map((_, i) => (
                 <div key={i} className={`h-8 flex-1 rounded-sm ${i < waterGlasses ? 'bg-[#0ea5e9]' : 'bg-background'}`} />
               ))}
             </div>

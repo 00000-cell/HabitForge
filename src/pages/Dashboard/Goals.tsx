@@ -25,17 +25,23 @@ export default function Goals() {
   }, []);
 
   const toggleGoal = (id: string) => {
-    fetch(`/api/goals/${id}`, { method: 'DELETE' })
-      .then(res => {
-        if (res.ok) {
-          const goal = goals.find(g => g.id === id);
-          if (goal) {
-            const xpGained = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
-            addXp(xpGained);
-            triggerConfetti();
+    fetch(`/api/goals/${id}/toggle`, { method: 'PUT' })
+      .then(res => res.json())
+      .then(updatedGoal => {
+        setGoals(prev => prev.map(goal => {
+          if (goal.id === id) {
+            if (updatedGoal.completed) {
+              const xpGained = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
+              addXp(xpGained);
+              triggerConfetti();
+            } else {
+              const xpLost = goal.type === 'weekly' ? 25 : goal.type === 'monthly' ? 100 : 500;
+              addXp(-xpLost);
+            }
+            return { ...goal, completed: updatedGoal.completed };
           }
-          setGoals(prev => prev.filter(g => g.id !== id));
-        }
+          return goal;
+        }));
       })
       .catch(err => console.error(err));
   };
@@ -60,47 +66,62 @@ export default function Goals() {
 
   const renderGoalSection = (type: 'weekly' | 'monthly' | 'yearly', title: string) => {
     const sectionGoals = goals.filter(g => g.type === type);
+    const activeGoals = sectionGoals.filter(g => !g.completed);
+    const completedGoals = sectionGoals.filter(g => g.completed);
     
+    const GoalItem = ({ goal }: { goal: Goal }) => (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
+          goal.completed 
+            ? 'bg-primary/5 border-primary/20 opacity-60' 
+            : 'bg-background border-gray-800 hover:border-gray-700'
+        }`}
+        onClick={() => toggleGoal(goal.id)}
+      >
+        <div className="flex-shrink-0">
+          {goal.completed ? (
+            <CheckCircle2 className="w-6 h-6 text-primary" />
+          ) : (
+            <Circle className="w-6 h-6 text-muted" />
+          )}
+        </div>
+        <span className={`text-lg transition-colors ${goal.completed ? 'text-muted line-through' : 'text-white'}`}>
+          {goal.title}
+        </span>
+      </motion.div>
+    );
+
     return (
-      <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
+      <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl flex flex-col">
         <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
           <Target className="w-5 h-5 text-primary" />
           {title}
         </h2>
         
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1">
+          <h3 className="text-sm font-medium text-gray-400 mb-2 uppercase tracking-wider">Active</h3>
           <AnimatePresence>
-            {sectionGoals.map(goal => (
-              <motion.div
-                key={goal.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
-                  goal.completed 
-                    ? 'bg-primary/5 border-primary/20 opacity-60' 
-                    : 'bg-background border-gray-800 hover:border-gray-700'
-                }`}
-                onClick={() => toggleGoal(goal.id)}
-              >
-                <div className="flex-shrink-0">
-                  {goal.completed ? (
-                    <CheckCircle2 className="w-6 h-6 text-primary" />
-                  ) : (
-                    <Circle className="w-6 h-6 text-muted" />
-                  )}
-                </div>
-                <span className={`text-lg transition-colors ${goal.completed ? 'text-muted line-through' : 'text-white'}`}>
-                  {goal.title}
-                </span>
-              </motion.div>
-            ))}
+            {activeGoals.map(goal => <GoalItem key={goal.id} goal={goal} />)}
           </AnimatePresence>
 
-          {sectionGoals.length === 0 && (
+          {activeGoals.length === 0 && (
             <div className="text-center py-6 text-muted border border-dashed border-gray-800 rounded-2xl">
-              No {title.toLowerCase()} set yet.
+              No active {title.toLowerCase()}.
+            </div>
+          )}
+
+          {completedGoals.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-sm font-medium text-gray-400 mb-2 uppercase tracking-wider">Completed</h3>
+              <div className="space-y-3">
+                <AnimatePresence>
+                  {completedGoals.map(goal => <GoalItem key={goal.id} goal={goal} />)}
+                </AnimatePresence>
+              </div>
             </div>
           )}
         </div>

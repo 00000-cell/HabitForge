@@ -37,13 +37,21 @@ public:
         return user_.waterIntake;
     }
 
+    int getWaterGoal() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return user_.waterGoal;
+    }
+
+    void setWaterGoal(int goal) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        user_.waterGoal = goal;
+    }
+
     void incrementWaterIntake() {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (user_.waterIntake < 8) {
-            user_.waterIntake++;
-            user_.xp += 5;
-            updateLevelUnsafe();
-        }
+        user_.waterIntake++;
+        user_.xp += 5;
+        updateLevelUnsafe();
     }
 
     void updateProfile(const std::string& name, const std::string& avatarUrl) {
@@ -127,7 +135,7 @@ public:
 private:
     Store() {
         // Initial Mock Data
-        user_ = {150, 2, "John Doe", "", 0, ""};
+        user_ = {150, 2, "John Doe", "", 0, 8, ""};
         
         habits_ = {
             {"1", "Morning Workout", 12, true, "#8B5CF6"},
