@@ -6,7 +6,7 @@ import ProgressRing from '../../components/ProgressRing';
 
 export default function Health() {
   const { addXp, triggerConfetti } = useAppContext();
-  const [steps, setSteps] = useState(8432);
+  const [steps, setSteps] = useState(0);
   const goalSteps = 10000;
   
   const [waterGlasses, setWaterGlasses] = useState(0);
@@ -28,21 +28,10 @@ export default function Health() {
       .catch(err => console.error(err));
   }, []);
 
-  // Simulate step counting
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSteps(s => Math.min(s + Math.floor(Math.random() * 5), goalSteps));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Simulate water reminder every 30 seconds for demo purposes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowWaterReminder(true);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const handleStepsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (!isNaN(val)) setSteps(val);
+  };
 
   const handleAddWater = async () => {
     const newAmount = waterGlasses + 1;
@@ -132,8 +121,13 @@ export default function Health() {
               <h3 className="font-semibold text-white">Daily Steps</h3>
             </div>
             <div>
-              <div className="flex items-end gap-2 mb-2">
-                <span className="text-4xl font-bold text-white">{steps.toLocaleString()}</span>
+              <div className="flex items-end gap-2 mb-2 group/edit cursor-pointer">
+                <input
+                  type="number"
+                  value={steps}
+                  onChange={handleStepsChange}
+                  className="w-24 bg-transparent text-4xl font-bold text-white border-b border-transparent focus:border-primary outline-none transition-colors"
+                />
                 <span className="text-muted mb-1">/ {goalSteps.toLocaleString()}</span>
               </div>
               <div className="w-full bg-background rounded-full h-2 mt-4">

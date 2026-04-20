@@ -1,0 +1,21 @@
+# ninja log v6
+5	123	7983676794285580	crow-populate-prefix/src/crow-populate-stamp/crow-populate-mkdir	5e9927911658ff83
+5	123	7983676794285580	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-mkdir	5e9927911658ff83
+124	13787	7983676930919406	crow-populate-prefix/src/crow-populate-stamp/crow-populate-download	319d846fabb06adb
+124	13787	7983676930919406	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-download	319d846fabb06adb
+13788	14021	7983676931031825	crow-populate-prefix/src/crow-populate-stamp/crow-populate-update	63569315dc265fc2
+13788	14021	7983676931031825	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-update	63569315dc265fc2
+14023	14128	7983676934337281	crow-populate-prefix/src/crow-populate-stamp/crow-populate-patch	d97fdc66ccd1d83
+14023	14128	7983676934337281	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-patch	d97fdc66ccd1d83
+14128	14237	7983676935422748	crow-populate-prefix/src/crow-populate-stamp/crow-populate-configure	7f54d5945c27d6be
+14128	14237	7983676935422748	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-configure	7f54d5945c27d6be
+14237	14344	7983676936500308	crow-populate-prefix/src/crow-populate-stamp/crow-populate-build	6a6e03248e1edfe9
+14237	14344	7983676936500308	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-build	6a6e03248e1edfe9
+14345	14450	7983676937565826	crow-populate-prefix/src/crow-populate-stamp/crow-populate-install	beea3273e3a682c3
+14345	14450	7983676937565826	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-install	beea3273e3a682c3
+14451	14558	7983676938630174	crow-populate-prefix/src/crow-populate-stamp/crow-populate-test	45b29805d0bad74c
+14451	14558	7983676938630174	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-test	45b29805d0bad74c
+14558	14710	7983676940158687	CMakeFiles/crow-populate-complete	580d64b7d603d5bc
+14558	14710	7983676940158687	crow-populate-prefix/src/crow-populate-stamp/crow-populate-done	580d64b7d603d5bc
+14558	14710	7983676940158687	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/CMakeFiles/crow-populate-complete	580d64b7d603d5bc
+14558	14710	7983676940158687	C:/Users/User/Desktop/oodp projects/backend/build/_deps/crow-subbuild/crow-populate-prefix/src/crow-populate-stamp/crow-populate-done	580d64b7d603d5bc

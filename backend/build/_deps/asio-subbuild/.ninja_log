@@ -1,0 +1,21 @@
+# ninja log v6
+6	114	7983676690376577	asio-populate-prefix/src/asio-populate-stamp/asio-populate-mkdir	4d59e6b714c7587c
+6	114	7983676690376577	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-mkdir	4d59e6b714c7587c
+115	9123	7983676780449408	asio-populate-prefix/src/asio-populate-stamp/asio-populate-download	ca799253e3691b9c
+115	9123	7983676780449408	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-download	ca799253e3691b9c
+9123	9363	7983676780549427	asio-populate-prefix/src/asio-populate-stamp/asio-populate-update	5734d7a89e40e6e8
+9123	9363	7983676780549427	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-update	5734d7a89e40e6e8
+9364	9474	7983676783961398	asio-populate-prefix/src/asio-populate-stamp/asio-populate-patch	7ca6e25cc0bf2975
+9364	9474	7983676783961398	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-patch	7ca6e25cc0bf2975
+9474	9594	7983676785114269	asio-populate-prefix/src/asio-populate-stamp/asio-populate-configure	a8e27d7aa51ecee4
+9474	9594	7983676785114269	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-configure	a8e27d7aa51ecee4
+9594	9711	7983676786338139	asio-populate-prefix/src/asio-populate-stamp/asio-populate-build	8247498975f76da3
+9594	9711	7983676786338139	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-build	8247498975f76da3
+9711	9817	7983676787405171	asio-populate-prefix/src/asio-populate-stamp/asio-populate-install	b7ef8106d6a17ffd
+9711	9817	7983676787405171	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-install	b7ef8106d6a17ffd
+9818	9923	7983676788453024	asio-populate-prefix/src/asio-populate-stamp/asio-populate-test	de5669a3cb400b78
+9818	9923	7983676788453024	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-test	de5669a3cb400b78
+9923	10077	7983676790006233	CMakeFiles/asio-populate-complete	e238f6664292b380
+9923	10077	7983676790006233	asio-populate-prefix/src/asio-populate-stamp/asio-populate-done	e238f6664292b380
+9923	10077	7983676790006233	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/CMakeFiles/asio-populate-complete	e238f6664292b380
+9923	10077	7983676790006233	C:/Users/User/Desktop/oodp projects/backend/build/_deps/asio-subbuild/asio-populate-prefix/src/asio-populate-stamp/asio-populate-done	e238f6664292b380

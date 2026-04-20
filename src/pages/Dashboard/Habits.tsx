@@ -252,9 +252,24 @@ export default function Habits() {
             </motion.div>
           ))}
           
-          {habits.length === 0 && (
+          {habits.length === 0 && !isAdding && (
             <div className="text-center py-12 text-muted">
-              <p>No habits yet. Start building your routine!</p>
+              <p className="mb-6">No habits yet. Start building your routine!</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {['Morning Workout', 'Read 20 pages', 'Drink 2L Water', 'Meditate 10m', 'Code 1hr'].map(rec => (
+                  <button 
+                    key={rec}
+                    onClick={() => {
+                      setNewHabitTitle(rec);
+                      setIsAdding(true);
+                      setMultiSelectDates([selectedDateStr]);
+                    }}
+                    className="px-4 py-2 rounded-full border border-gray-700 bg-background hover:border-primary hover:text-primary transition-colors text-sm"
+                  >
+                    + {rec}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

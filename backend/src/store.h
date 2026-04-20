@@ -134,28 +134,8 @@ public:
 
 private:
     Store() {
-        // Initial Mock Data
-        user_ = {150, 2, "John Doe", "", 0, 8, ""};
-        
-        // Mock data for today
-        auto now = std::chrono::system_clock::now();
-        auto in_time_t = std::chrono::system_clock::to_time_t(now);
-        char buf[100];
-        std::strftime(buf, sizeof(buf), "%Y-%m-%d", std::localtime(&in_time_t));
-        std::string today(buf);
-
-        dailyHabits_[today] = {
-            {"1", "Morning Workout", 12, true, "#8B5CF6"},
-            {"2", "Read 20 pages", 5, false, "#3B82F6"},
-            {"3", "Drink 2L Water", 21, false, "#06B6D4"}
-        };
-
-        goals_ = {
-            {"1", "Complete React Course", false, "weekly"},
-            {"2", "Read 4 Books", false, "monthly"},
-            {"3", "Get a new job", false, "yearly"},
-            {"4", "Workout 4x this week", true, "weekly"}
-        };
+        // Start completely fresh at 0
+        user_ = {0, 1, "John Doe", "", 0, 8, ""};
     }
 
     void updateLevelUnsafe() {

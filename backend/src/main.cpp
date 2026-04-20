@@ -137,7 +137,7 @@ int main() {
         return crow::response(x);
     });
 
-    CROW_ROUTE(app, "/api/goals/<string>").methods(crow::HTTPMethod::DELETE)([](const std::string& id) {
+    CROW_ROUTE(app, "/api/goals/<string>").methods("DELETE"_method)([](const std::string& id) {
         if (Store::getInstance().deleteGoal(id)) {
             return crow::response(200);
         }
