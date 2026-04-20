@@ -21,6 +21,22 @@ const MONTHLY_TREND = [
 ];
 
 export default function Analytics() {
+  const [longestStreak, setLongestStreak] = React.useState('0 Days');
+
+  React.useEffect(() => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    fetch(`/api/habits?date=${dateStr}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const max = Math.max(...data.map((h: any) => h.streak));
+          setLongestStreak(`${max} Days`);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="mb-8">
@@ -32,7 +48,7 @@ export default function Analytics() {
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { icon: Activity, label: 'Completion Rate', value: '84%', trend: '+5%', color: 'text-primary', bg: 'bg-primary/20' },
-          { icon: Flame, label: 'Longest Streak', value: '24 Days', trend: 'Active', color: 'text-orange-500', bg: 'bg-orange-500/20' },
+          { icon: Flame, label: 'Longest Streak', value: longestStreak, trend: 'Active', color: 'text-orange-500', bg: 'bg-orange-500/20' },
           { icon: Target, label: 'Goals Met', value: '12', trend: '+2 this week', color: 'text-green-500', bg: 'bg-green-500/20' },
           { icon: TrendingUp, label: 'Productivity Score', value: '92/100', trend: '+8 pts', color: 'text-secondary', bg: 'bg-secondary/20' },
         ].map((stat, idx) => (

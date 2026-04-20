@@ -65,7 +65,7 @@ export default function Goals() {
   };
 
   const renderGoalSection = (type: 'weekly' | 'monthly' | 'yearly', title: string) => {
-    const sectionGoals = goals.filter(g => g.type === type);
+    const sectionGoals = goals.filter(g => g.type.toLowerCase() === type.toLowerCase());
     const activeGoals = sectionGoals.filter(g => !g.completed);
     const completedGoals = sectionGoals.filter(g => g.completed);
     

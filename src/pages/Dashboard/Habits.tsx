@@ -18,6 +18,7 @@ export default function Habits() {
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [multiSelectDates, setMultiSelectDates] = useState<string[]>([]);
+  const [everyDaySelected, setEveryDaySelected] = useState(false);
 
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   
@@ -88,6 +89,7 @@ export default function Habits() {
       d.setDate(d.getDate() + 1);
     }
     setMultiSelectDates(dates);
+    setEveryDaySelected(true);
   };
 
   const toggleHabit = (id: string) => {
@@ -129,6 +131,7 @@ export default function Habits() {
       setNewHabitTitle('');
       setIsAdding(false);
       setMultiSelectDates([]);
+      setEveryDaySelected(false);
     }).catch(err => console.error(err));
   };
 
@@ -166,6 +169,7 @@ export default function Habits() {
             onClick={() => {
               if (!isAdding) setMultiSelectDates([selectedDateStr]);
               setIsAdding(!isAdding);
+              setEveryDaySelected(false);
             }}
             className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
           >
@@ -193,9 +197,9 @@ export default function Habits() {
               <div className="flex gap-2">
                 <button 
                   onClick={handleSelectEveryDay}
-                  className="px-4 py-3 bg-background border border-primary/50 text-primary font-medium rounded-xl hover:bg-primary hover:text-white transition-colors"
+                  className={`px-4 py-3 border font-medium rounded-xl transition-colors whitespace-nowrap ${everyDaySelected ? 'bg-primary text-white border-primary' : 'bg-background text-primary border-primary/50 hover:bg-primary hover:text-white'}`}
                 >
-                  Every Day
+                  {everyDaySelected ? '✓ 365 Days Selected' : 'Every Day'}
                 </button>
                 <button 
                   type="submit" 

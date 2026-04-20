@@ -41,9 +41,27 @@ export default function Academics() {
     }
   };
 
-  // Exam Countdown (mock)
-  const examDate = new Date();
-  examDate.setDate(examDate.getDate() + 14); // 14 days from now
+  // Exam Countdown State
+  const [examDateStr, setExamDateStr] = useState(() => {
+    const saved = localStorage.getItem('examDate');
+    if (saved) return saved;
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [isEditingExam, setIsEditingExam] = useState(false);
+
+  const handleExamDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setExamDateStr(e.target.value);
+    localStorage.setItem('examDate', e.target.value);
+    setIsEditingExam(false);
+  };
+
+  const getDaysLeft = () => {
+    if (!examDateStr) return 0;
+    const diff = new Date(examDateStr).getTime() - new Date().getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -167,13 +185,28 @@ export default function Academics() {
                 <Calendar className="w-5 h-5" />
               </div>
               <h3 className="text-xl font-semibold text-white">Next Exam</h3>
+              <button onClick={() => setIsEditingExam(!isEditingExam)} className="ml-auto text-muted hover:text-secondary transition-colors">
+                <Edit3 className="w-4 h-4" />
+              </button>
             </div>
-            <div className="p-4 bg-background border border-gray-800 rounded-xl">
-              <div className="text-3xl font-bold text-white mb-2">14<span className="text-lg text-muted font-normal ml-1">days left</span></div>
-              <div className="w-full bg-card rounded-full h-2 mt-4">
-                <div className="bg-secondary h-2 rounded-full" style={{ width: '30%' }}></div>
+            
+            {isEditingExam ? (
+              <div className="p-4 bg-background border border-secondary/50 rounded-xl">
+                <input 
+                  type="date" 
+                  value={examDateStr}
+                  onChange={handleExamDateChange}
+                  className="w-full bg-transparent text-white focus:outline-none"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="p-4 bg-background border border-gray-800 rounded-xl">
+                <div className="text-3xl font-bold text-white mb-2">{getDaysLeft()}<span className="text-lg text-muted font-normal ml-1">days left</span></div>
+                <div className="w-full bg-card rounded-full h-2 mt-4">
+                  <div className="bg-secondary h-2 rounded-full" style={{ width: `${Math.min(100, (getDaysLeft() / 30) * 100)}%` }}></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
