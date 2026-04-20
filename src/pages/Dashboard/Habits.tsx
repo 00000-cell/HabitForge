@@ -17,6 +17,7 @@ export default function Habits() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newHabitTitle, setNewHabitTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [multiSelectDates, setMultiSelectDates] = useState<string[]>([]);
 
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   
@@ -63,7 +64,18 @@ export default function Habits() {
 
   const handleDayClick = (day: number | null) => {
     if (day !== null) {
-      setSelectedDate(new Date(currentYear, currentMonthDate.getMonth(), day));
+      const clickedDate = new Date(currentYear, currentMonthDate.getMonth(), day);
+      const clickedStr = getFormatDate(clickedDate);
+      
+      if (isAdding) {
+        setMultiSelectDates(prev => 
+          prev.includes(clickedStr) 
+            ? prev.filter(d => d !== clickedStr)
+            : [...prev, clickedStr]
+        );
+      } else {
+        setSelectedDate(clickedDate);
+      }
     }
   };
 
@@ -93,18 +105,19 @@ export default function Habits() {
     e.preventDefault();
     if (!newHabitTitle.trim()) return;
 
-    fetch(`/api/habits?date=${selectedDateStr}`, {
+    fetch(`/api/habits`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newHabitTitle })
+      body: JSON.stringify({ title: newHabitTitle, dates: multiSelectDates })
     }).then(() => {
-      // Re-fetch to get the new list
+      // Re-fetch to get the new list for the currently viewed date
       return fetch(`/api/habits?date=${selectedDateStr}`);
     }).then(res => res.json())
     .then(data => {
       setHabits(data);
       setNewHabitTitle('');
       setIsAdding(false);
+      setMultiSelectDates([]);
     }).catch(err => console.error(err));
   };
 
@@ -139,7 +152,10 @@ export default function Habits() {
             Habits for {selectedDate.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
           </h2>
           <button 
-            onClick={() => setIsAdding(!isAdding)}
+            onClick={() => {
+              if (!isAdding) setMultiSelectDates([selectedDateStr]);
+              setIsAdding(!isAdding);
+            }}
             className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
           >
             {isAdding ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
@@ -152,19 +168,29 @@ export default function Habits() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleAddHabit}
-            className="mb-6 flex gap-4"
+            className="mb-6 flex flex-col gap-3 p-4 border border-primary/30 bg-primary/5 rounded-2xl"
           >
-            <input
-              type="text"
-              autoFocus
-              placeholder="E.g., Meditate for 10 minutes..."
-              value={newHabitTitle}
-              onChange={(e) => setNewHabitTitle(e.target.value)}
-              className="flex-1 bg-background border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
-            />
-            <button type="submit" className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors">
-              Add
-            </button>
+            <div className="flex gap-4">
+              <input
+                type="text"
+                autoFocus
+                placeholder="E.g., Meditate for 10 minutes..."
+                value={newHabitTitle}
+                onChange={(e) => setNewHabitTitle(e.target.value)}
+                className="flex-1 bg-background border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+              />
+              <button 
+                type="submit" 
+                disabled={multiSelectDates.length === 0}
+                className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+            <p className="text-sm text-primary font-medium flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              Select dates on the calendar below. ({multiSelectDates.length} days selected)
+            </p>
           </motion.form>
         )}
 
@@ -246,8 +272,15 @@ export default function Habits() {
         
         <div className="grid grid-cols-7 gap-2">
           {calendarDays.map((day, index) => {
+            if (day === null) {
+              return <div key={index} className="aspect-square bg-transparent" />;
+            }
+            const dateObj = new Date(currentYear, currentMonthDate.getMonth(), day);
+            const dateStr = getFormatDate(dateObj);
+            
             const isToday = day === todayDate.getDate() && currentMonthDate.getMonth() === todayDate.getMonth() && currentYear === todayDate.getFullYear();
-            const isSelected = day === selectedDate.getDate() && currentMonthDate.getMonth() === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
+            const isSelected = !isAdding && day === selectedDate.getDate() && currentMonthDate.getMonth() === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
+            const isMultiSelected = isAdding && multiSelectDates.includes(dateStr);
             
             return (
               <div 
@@ -255,10 +288,12 @@ export default function Habits() {
                 onClick={() => handleDayClick(day)}
                 className={`
                   aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all
-                  ${day === null ? 'bg-transparent' : 'bg-background border border-gray-800 cursor-pointer hover:border-gray-600'}
-                  ${isToday && !isSelected ? 'text-primary font-bold border-primary/50' : ''}
+                  bg-background border border-gray-800 cursor-pointer hover:border-gray-600
+                  ${isToday && !isSelected && !isMultiSelected ? 'text-primary font-bold border-primary/50' : ''}
                   ${isSelected ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] text-white font-bold scale-105' : ''}
-                  ${day !== null && !isToday && !isSelected ? 'text-gray-400' : ''}
+                  ${isMultiSelected ? 'bg-secondary/40 border-secondary shadow-[0_0_15px_rgba(217,70,239,0.4)] text-white font-bold scale-105' : ''}
+                  ${!isToday && !isSelected && !isMultiSelected ? 'text-gray-400' : ''}
+                  ${isAdding ? 'hover:bg-secondary/20 hover:border-secondary transition-colors duration-100' : ''}
                 `}
               >
                 {day}

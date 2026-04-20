@@ -59,20 +59,27 @@ int main() {
     });
 
     CROW_ROUTE(app, "/api/habits").methods("POST"_method)([&store](const crow::request& req) {
-        std::string dateStr = req.url_params.get("date") ? req.url_params.get("date") : "";
-        if (dateStr.empty()) return crow::response(400);
-
         auto x = crow::json::load(req.body);
-        if (!x || !x.has("title")) return crow::response(400);
+        if (!x || !x.has("title") || !x.has("dates")) return crow::response(400);
         
-        Habit h;
-        h.id = std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
-        h.title = x["title"].s();
-        h.streak = 0;
-        h.completedToday = false;
-        h.color = "#8B5CF6"; // Default or randomized
+        std::string title = x["title"].s();
         
-        store.addHabit(dateStr, h);
+        // Ensure 'dates' is a list
+        if (x["dates"].t() != crow::json::type::List) return crow::response(400);
+
+        // Generate a single unique ID for this habit creation batch
+        std::string newId = std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+
+        for (const auto& dateVal : x["dates"]) {
+            Habit h;
+            h.id = newId; // Same ID if you want them linked, or unique per day. Let's make them unique per day to avoid ID collisions if fetched in a weird way, or keep it the same. Actually, it's safer to keep the ID unique so we can toggle them independently.
+            h.title = title;
+            h.streak = 0;
+            h.completedToday = false;
+            h.color = "#8B5CF6"; // Default or randomized
+            store.addHabit(dateVal.s(), h);
+        }
+        
         return crow::response(201);
     });
 
