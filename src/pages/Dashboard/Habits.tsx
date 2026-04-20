@@ -79,6 +79,17 @@ export default function Habits() {
     }
   };
 
+  const handleSelectEveryDay = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const dates = [];
+    const d = new Date(selectedDate);
+    for (let i = 0; i < 365; i++) {
+      dates.push(getFormatDate(d));
+      d.setDate(d.getDate() + 1);
+    }
+    setMultiSelectDates(dates);
+  };
+
   const toggleHabit = (id: string) => {
     fetch(`/api/habits/${id}/toggle?date=${selectedDateStr}`, { method: 'PUT' })
       .then(res => res.json())
@@ -170,7 +181,7 @@ export default function Habits() {
             onSubmit={handleAddHabit}
             className="mb-6 flex flex-col gap-3 p-4 border border-primary/30 bg-primary/5 rounded-2xl"
           >
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="text"
                 autoFocus
@@ -179,18 +190,28 @@ export default function Habits() {
                 onChange={(e) => setNewHabitTitle(e.target.value)}
                 className="flex-1 bg-background border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
               />
-              <button 
-                type="submit" 
-                disabled={multiSelectDates.length === 0}
-                className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors disabled:opacity-50"
-              >
-                Add
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleSelectEveryDay}
+                  className="px-4 py-3 bg-background border border-primary/50 text-primary font-medium rounded-xl hover:bg-primary hover:text-white transition-colors"
+                >
+                  Every Day
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={multiSelectDates.length === 0}
+                  className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-primary font-medium flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-              Select dates on the calendar below. ({multiSelectDates.length} days selected)
-            </p>
+            {multiSelectDates.length > 0 && (
+              <p className="text-sm text-primary font-medium flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                {multiSelectDates.length} days selected.
+              </p>
+            )}
           </motion.form>
         )}
 
