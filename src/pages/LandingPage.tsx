@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Activity, Target, Brain, Shield, ChevronRight } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Features = [
   {
@@ -42,14 +43,15 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">HabitForge</span>
+            <span className="text-xl font-bold text-text tracking-tight">HabitForge</span>
           </div>
           <nav className="hidden md:flex gap-8">
-            <a href="#features" className="text-muted hover:text-white transition-colors">Features</a>
-            <a href="#how-it-works" className="text-muted hover:text-white transition-colors">How it Works</a>
+            <a href="#features" className="text-subtext hover:text-text transition-colors">Features</a>
+            <a href="#how-it-works" className="text-subtext hover:text-text transition-colors">How it Works</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link to="/auth?mode=login" className="text-text hover:text-white transition-colors">Login</Link>
+            <ThemeToggle />
+            <Link to="/auth?mode=login" className="text-text hover:text-primary transition-colors">Login</Link>
             <Link to="/auth?mode=signup" className="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_20px_rgba(139,92,246,0.5)]">
               Sign Up
             </Link>
@@ -68,13 +70,13 @@ export default function LandingPage() {
           transition={{ duration: 0.6 }}
           className="relative z-10"
         >
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight max-w-4xl leading-tight">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-text tracking-tight max-w-4xl leading-tight">
             Build Better Habits. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
               Become Unstoppable.
             </span>
           </h1>
-          <p className="mt-6 text-xl text-muted max-w-2xl mx-auto">
+          <p className="mt-6 text-xl text-subtext max-w-2xl mx-auto">
             Track your habits, stay consistent, and build the life you actually want with the ultimate premium life dashboard.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -82,7 +84,7 @@ export default function LandingPage() {
               Start Tracking Free
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link to="/auth?mode=login" className="px-8 py-4 bg-card text-white rounded-xl font-semibold text-lg transition-all hover:bg-gray-800 border border-gray-800">
+            <Link to="/auth?mode=login" className="px-8 py-4 bg-card text-text rounded-xl font-semibold text-lg transition-all hover:bg-background border border-border">
               View Dashboard
             </Link>
           </div>
@@ -93,8 +95,8 @@ export default function LandingPage() {
       <section id="features" className="py-24 bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">Everything you need to succeed</h2>
-            <p className="text-muted mt-4">Powerful tools combined in one minimal interface.</p>
+            <h2 className="text-3xl font-bold text-text">Everything you need to succeed</h2>
+            <p className="text-subtext mt-4">Powerful tools combined in one minimal interface.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Features.map((feature, idx) => (
@@ -104,13 +106,13 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="bg-card p-6 rounded-2xl border border-gray-800 hover:border-primary/50 transition-colors group"
+                className="bg-card p-6 rounded-2xl border border-border hover:border-primary/50 transition-colors group"
               >
                 <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(139,92,246,0.1)] group-hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-muted">{feature.description}</p>
+                <h3 className="text-xl font-semibold text-text mb-2">{feature.title}</h3>
+                <p className="text-subtext">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -120,7 +122,7 @@ export default function LandingPage() {
       {/* How It Works */}
       <section id="how-it-works" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-16">How it works</h2>
+          <h2 className="text-3xl font-bold text-text mb-16">How it works</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {Steps.map((step, idx) => (
               <motion.div
@@ -134,8 +136,8 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-card border border-primary/30 rounded-full flex items-center justify-center text-2xl font-bold text-primary mx-auto mb-6 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
                   {step.step}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
-                <p className="text-muted max-w-xs mx-auto">{step.description}</p>
+                <h3 className="text-xl font-semibold text-text mb-3">{step.title}</h3>
+                <p className="text-subtext max-w-xs mx-auto">{step.description}</p>
                 {idx < Steps.length - 1 && (
                   <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-primary/30 to-transparent pointer-events-none" />
                 )}

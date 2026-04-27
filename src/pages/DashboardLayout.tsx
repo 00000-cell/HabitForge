@@ -1,15 +1,17 @@
 import React from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { 
   Activity, Home, BookOpen, Heart, Target, 
-  BarChart2, User, Bell, Search, Menu
+  BarChart2, User, Bell, Search, Menu, ShieldAlert, LogOut, Calendar
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Habits', path: '/dashboard' },
+  { icon: Calendar, label: 'Calendar', path: '/dashboard/calendar' },
   { icon: BookOpen, label: 'Academics', path: '/dashboard/academics' },
   { icon: Heart, label: 'Health', path: '/dashboard/health' },
   { icon: Target, label: 'Goals', path: '/dashboard/goals' },
@@ -18,8 +20,9 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardLayout() {
-  const { xp, level, xpToNextLevel, showConfetti, userName, avatarUrl } = useAppContext();
+  const { xp, level, xpToNextLevel, showConfetti, userName, avatarUrl, isAdmin, logout } = useAppContext();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Calculate progress percentage
   const currentLevelBase = level === 1 ? 0 : level === 2 ? 100 : 300 + (level - 3) * 300;
@@ -35,7 +38,7 @@ export default function DashboardLayout() {
       )}
 
       {/* Sidebar (Desktop) */}
-      <aside className="w-64 border-r border-card hidden md:flex flex-col bg-background/50 backdrop-blur-xl z-20 relative">
+      <aside className="w-64 border-r border-border hidden md:flex flex-col bg-sidebar z-20 relative transition-colors duration-300">
         {/* Glow behind sidebar */}
         <div className="absolute top-0 left-0 w-full h-full bg-primary/5 blur-[100px] pointer-events-none" />
         
@@ -44,7 +47,7 @@ export default function DashboardLayout() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">HabitForge</span>
+            <span className="text-xl font-bold text-text tracking-tight">HabitForge</span>
           </div>
         </div>
 
@@ -57,10 +60,10 @@ export default function DashboardLayout() {
                 to={item.path}
                 className={() =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    isRouteActive
-                      ? 'bg-primary/20 text-primary border border-primary/30 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
-                      : 'text-muted hover:bg-card hover:text-white'
-                  }`
+                     isRouteActive
+                       ? 'bg-primary text-white shadow-[0_4px_10px_rgba(139,92,246,0.2)]'
+                       : 'text-subtext hover:bg-card hover:text-text'
+                   }`
                 }
               >
                 <item.icon className="w-5 h-5" />
@@ -68,12 +71,22 @@ export default function DashboardLayout() {
               </NavLink>
             );
           })}
+          
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-red-400 hover:bg-red-500/10 hover:text-red-300 mt-4 border border-transparent hover:border-red-500/30"
+            >
+              <ShieldAlert className="w-5 h-5" />
+              <span className="font-medium">Admin Panel</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="p-4 relative z-10 border-t border-card">
-          <div className="bg-card p-4 rounded-xl border border-gray-800">
+          <div className="bg-card p-4 rounded-xl border border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-white">Level {level}</span>
+              <span className="text-sm font-semibold text-text">Level {level}</span>
               <span className="text-xs text-primary">{xp} XP</span>
             </div>
             <div className="h-2 bg-background rounded-full overflow-hidden">
@@ -84,7 +97,7 @@ export default function DashboardLayout() {
                 transition={{ duration: 1, ease: 'easeOut' }}
               />
             </div>
-            <p className="text-xs text-muted mt-2 text-center">{xpToNextLevel} XP to next level</p>
+            <p className="text-xs text-subtext mt-2 text-center">{xpToNextLevel} XP to next level</p>
           </div>
         </div>
       </aside>
@@ -92,22 +105,36 @@ export default function DashboardLayout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* App Navbar */}
-        <header className="h-16 border-b border-card bg-background/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-20">
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-20 transition-colors duration-300">
           <div className="flex items-center gap-4 md:hidden">
-            <button className="text-muted hover:text-white">
+            <button className="text-subtext hover:text-text">
               <Menu className="w-6 h-6" />
             </button>
-            <span className="text-lg font-bold text-white">HabitForge</span>
+            <span className="text-lg font-bold text-text">HabitForge</span>
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-primary shadow-[0_0_10px_rgba(139,92,246,0.3)]" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)]">
-                <span className="text-sm font-bold text-white">{userName ? userName.substring(0, 2).toUpperCase() : 'U'}</span>
-              </div>
-            )}
+            <ThemeToggle />
+            <button 
+              onClick={() => navigate('/dashboard/profile')}
+              className="hover:scale-105 transition-transform"
+              title="Go to Profile"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-primary shadow-[0_0_10px_rgba(139,92,246,0.3)]" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)]">
+                  <span className="text-sm font-bold text-text">{userName ? userName.substring(0, 2).toUpperCase() : 'U'}</span>
+                </div>
+              )}
+            </button>
+            <button 
+              onClick={logout} 
+              className="p-2 text-subtext hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-2"
+              title="Log Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
@@ -116,18 +143,9 @@ export default function DashboardLayout() {
            {/* General Background Glow for Dashboard */}
            <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[150px] pointer-events-none" />
           
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="h-full relative z-10"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div className="h-full relative z-10">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>

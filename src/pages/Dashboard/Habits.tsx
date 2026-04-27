@@ -1,176 +1,295 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Flame, Check, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Check, X, Zap, Star, Target, Flame } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import ProgressRing from '../../components/ProgressRing';
+import { db } from '../../firebase';
+import { collection, query, where, onSnapshot, addDoc, setDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 interface Habit {
   id: string;
-  title: string;
-  streak: number;
+  name: string;
+  schedule: 'daily' | string[];
+  createdAt: any;
+  isActive: boolean;
+}
+
+interface HabitLog {
+  id: string;
+  habitId: string;
+  date: string;
+  completed: boolean;
+}
+
+interface HabitWithStats extends Habit {
   completedToday: boolean;
-  color: string;
+  streak: number;
 }
 
 export default function Habits() {
-  const { addXp, triggerConfetti } = useAppContext();
+  const { addXp, triggerConfetti, user, xp, level } = useAppContext();
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [newHabitTitle, setNewHabitTitle] = useState('');
+  const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [newHabitName, setNewHabitName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [multiSelectDates, setMultiSelectDates] = useState<string[]>([]);
-  const [everyDaySelected, setEveryDaySelected] = useState(false);
-
-  const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
+  const [loadingHabits, setLoadingHabits] = useState<Set<string>>(new Set());
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
-  // Format YYYY-MM-DD for the API
+  const [scheduleType, setScheduleType] = useState<'daily' | 'specific'>('daily');
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+
+  const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const WEEKDAYS_LABELS = [
+    { id: 'sun', label: 'Su' }, { id: 'mon', label: 'Mo' }, { id: 'tue', label: 'Tu' }, 
+    { id: 'wed', label: 'We' }, { id: 'thu', label: 'Th' }, { id: 'fri', label: 'Fr' }, { id: 'sat', label: 'Sa' }
+  ];
+
   const getFormatDate = (d: Date) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const selectedDateStr = getFormatDate(selectedDate);
+  const todayStr = getFormatDate(new Date());
+  const todayDayOfWeekStr = WEEKDAYS[new Date().getDay()];
 
   useEffect(() => {
-    fetch(`/api/habits?date=${selectedDateStr}`)
-      .then(res => res.json())
-      .then(data => setHabits(data))
-      .catch(err => console.error(err));
-  }, [selectedDateStr]);
+    if (!user) {
+      setIsInitialLoading(false);
+      return;
+    }
+    
+    setIsInitialLoading(true);
+    setFetchError(null);
+    let habitsLoaded = false;
+    let logsLoaded = false;
+    
+    const checkReady = () => {
+      if (habitsLoaded && logsLoaded) {
+        setIsInitialLoading(false);
+      }
+    };
 
-  const completedCount = habits.filter(h => h.completedToday).length;
-  const progressPercent = habits.length === 0 ? 0 : Math.round((completedCount / habits.length) * 100);
+    const qHabits = query(collection(db, 'habits'), where('userId', '==', user.uid), where('isActive', '==', true));
+    const unsubHabits = onSnapshot(qHabits, (snapshot) => {
+      const h: Habit[] = [];
+      snapshot.forEach(d => h.push({ id: d.id, ...d.data() } as Habit));
+      setHabits(h);
+      habitsLoaded = true;
+      checkReady();
+    }, (err) => {
+      console.error(err);
+      setFetchError("Failed to fetch habits. Please check your connection.");
+      setIsInitialLoading(false);
+    });
 
-  // Calendar logic
-  const todayDate = new Date();
-  const currentMonthName = currentMonthDate.toLocaleString('default', { month: 'long' });
-  const currentYear = currentMonthDate.getFullYear();
-  
-  const generateCalendarDays = () => {
-    const daysInMonth = new Date(currentYear, currentMonthDate.getMonth() + 1, 0).getDate();
-    const firstDay = new Date(currentYear, currentMonthDate.getMonth(), 1).getDay();
-    const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(i);
-    return days;
-  };
-  const calendarDays = generateCalendarDays();
+    const qLogs = query(collection(db, 'habit_logs'), where('userId', '==', user.uid), where('completed', '==', true));
+    const unsubLogs = onSnapshot(qLogs, (snapshot) => {
+      const l: HabitLog[] = [];
+      snapshot.forEach(d => l.push({ id: d.id, ...d.data() } as HabitLog));
+      setLogs(l);
+      logsLoaded = true;
+      checkReady();
+    }, (err) => {
+      console.error(err);
+      setFetchError("Failed to fetch habit logs. Please check your connection.");
+      setIsInitialLoading(false);
+    });
 
-  const prevMonth = () => {
-    setCurrentMonthDate(new Date(currentYear, currentMonthDate.getMonth() - 1, 1));
-  };
+    return () => { unsubHabits(); unsubLogs(); };
+  }, [user]);
 
-  const nextMonth = () => {
-    setCurrentMonthDate(new Date(currentYear, currentMonthDate.getMonth() + 1, 1));
-  };
-
-  const handleDayClick = (day: number | null) => {
-    if (day !== null) {
-      const clickedDate = new Date(currentYear, currentMonthDate.getMonth(), day);
-      const clickedStr = getFormatDate(clickedDate);
+  // Combine habits with logs to get streak and completedToday
+  const habitsWithStats: HabitWithStats[] = habits.map(habit => {
+    const habitLogs = logs.filter(l => l.habitId === habit.id);
+    const completedDates = habitLogs.map(l => l.date).sort().reverse();
+    
+    const completedToday = completedDates.includes(todayStr);
+    
+    let streak = 0;
+    let currentCheckDate = new Date();
+    currentCheckDate.setHours(0, 0, 0, 0);
+    
+    const checkTodayStr = getFormatDate(currentCheckDate);
+    currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+    const yesterdayStr = getFormatDate(currentCheckDate);
+    
+    if (completedDates.includes(checkTodayStr) || completedDates.includes(yesterdayStr)) {
+      let checkDateStr = completedDates.includes(checkTodayStr) ? checkTodayStr : yesterdayStr;
+      let checkDate = new Date(checkDateStr);
       
-      if (isAdding) {
-        setMultiSelectDates(prev => 
-          prev.includes(clickedStr) 
-            ? prev.filter(d => d !== clickedStr)
-            : [...prev, clickedStr]
-        );
-      } else {
-        setSelectedDate(clickedDate);
+      for (const d of completedDates) {
+        if (d === checkDateStr) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+          checkDateStr = getFormatDate(checkDate);
+        } else if (d > checkDateStr) {
+          continue;
+        } else {
+          break;
+        }
       }
     }
-  };
 
-  const handleSelectEveryDay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const dates = [];
-    const d = new Date(selectedDate);
-    for (let i = 0; i < 365; i++) {
-      dates.push(getFormatDate(d));
-      d.setDate(d.getDate() + 1);
+    return { ...habit, completedToday, streak };
+  });
+
+  const habitsScheduledToday = habitsWithStats.filter(h => {
+    if (!h.schedule || h.schedule === 'daily') return true;
+    return h.schedule.includes(todayDayOfWeekStr);
+  });
+
+  const completedCount = habitsScheduledToday.filter(h => h.completedToday).length;
+  const bestStreak = habitsWithStats.length > 0 ? Math.max(...habitsWithStats.map(h => h.streak)) : 0;
+
+  const toggleHabit = async (id: string, currentlyCompleted: boolean, streak: number) => {
+    if (!user || loadingHabits.has(id)) return;
+    
+    setLoadingHabits(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setErrorMsg(null);
+
+    const newCompletedState = !currentlyCompleted;
+    const logId = `${user.uid}_${id}_${todayStr}`;
+    
+    try {
+      await setDoc(doc(db, 'habit_logs', logId), {
+        userId: user.uid,
+        habitId: id,
+        date: todayStr,
+        completed: newCompletedState
+      }, { merge: true });
+      
+      if (newCompletedState) {
+        addXp(5);
+        const tempStreak = streak + (currentlyCompleted ? 0 : 1);
+        if (tempStreak === 7 || tempStreak === 30) triggerConfetti();
+      } else {
+        addXp(-5);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Failed to update habit. Please try again.");
+    } finally {
+      setLoadingHabits(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
-    setMultiSelectDates(dates);
-    setEveryDaySelected(true);
   };
 
-  const toggleHabit = (id: string) => {
-    fetch(`/api/habits/${id}/toggle?date=${selectedDateStr}`, { method: 'PUT' })
-      .then(res => res.json())
-      .then(updatedHabit => {
-        setHabits(prev => prev.map(habit => {
-          if (habit.id === id) {
-            if (updatedHabit.completedToday) {
-              addXp(10);
-              if (updatedHabit.streak === 7 || updatedHabit.streak === 30) {
-                triggerConfetti();
-              }
-            } else {
-              addXp(-10);
-            }
-            return updatedHabit;
-          }
-          return habit;
-        }));
-      })
-      .catch(err => console.error(err));
+  const deleteHabit = async (id: string) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'habits', id), { isActive: false });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAddHabit = (e: React.FormEvent) => {
+  const handleAddHabit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHabitTitle.trim()) return;
+    if (!newHabitName.trim() || !user) return;
 
-    fetch(`/api/habits`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newHabitTitle, dates: multiSelectDates })
-    }).then(() => {
-      // Re-fetch to get the new list for the currently viewed date
-      return fetch(`/api/habits?date=${selectedDateStr}`);
-    }).then(res => res.json())
-    .then(data => {
-      setHabits(data);
-      setNewHabitTitle('');
+    if (scheduleType === 'specific' && selectedDays.length === 0) {
+      setErrorMsg('Please select at least one day for specific schedule.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'habits'), {
+        userId: user.uid,
+        name: newHabitName.trim(),
+        schedule: scheduleType === 'daily' ? 'daily' : selectedDays,
+        createdAt: serverTimestamp(),
+        isActive: true
+      });
+      setNewHabitName('');
+      setScheduleType('daily');
+      setSelectedDays([]);
       setIsAdding(false);
-      setMultiSelectDates([]);
-      setEveryDaySelected(false);
-    }).catch(err => console.error(err));
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Failed to add habit.");
+    }
   };
+
+  if (!user || isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-4">
+          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-subtext font-medium text-lg">Loading your routine...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-6 py-4 rounded-2xl flex flex-col items-center gap-2 max-w-md text-center">
+          <p className="font-semibold text-lg">Oops! Something went wrong.</p>
+          <p className="text-sm opacity-80">{fetchError}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Daily Habits</h1>
-          <p className="text-muted">Stay consistent, build your streak.</p>
-        </div>
-        
-        {/* Progress Overview Card */}
-        <div className="bg-card border border-gray-800 rounded-2xl p-4 flex items-center gap-6 shadow-lg">
-          <div className="relative">
-            <ProgressRing radius={40} stroke={6} progress={progressPercent} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-sm font-bold text-white">{progressPercent}%</span>
-            </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-text mb-2">Daily Execution</h1>
+        <p className="text-subtext">Focus on the present. Execute today.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-card p-6 rounded-3xl border border-border shadow-xl flex items-center gap-4">
+          <div className="p-3 bg-primary/20 rounded-2xl text-primary">
+            <Target className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-white font-medium">Daily Completion</h3>
-            <p className="text-sm text-muted">{completedCount} of {habits.length} habits done</p>
+            <div className="text-subtext text-sm font-medium">Completed Today</div>
+            <div className="text-2xl font-bold text-text">{completedCount} <span className="text-subtext text-lg font-normal">/ {habitsScheduledToday.length}</span></div>
+          </div>
+        </div>
+
+        <div className="bg-card p-6 rounded-3xl border border-border shadow-xl flex items-center gap-4">
+          <div className="p-3 bg-orange-500/20 rounded-2xl text-orange-500">
+            <Flame className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-subtext text-sm font-medium">Best Streak</div>
+            <div className="text-2xl font-bold text-text">{bestStreak} <span className="text-subtext text-lg font-normal">Days</span></div>
+          </div>
+        </div>
+
+        <div className="bg-card p-6 rounded-3xl border border-border shadow-xl flex items-center gap-4">
+          <div className="p-3 bg-secondary/20 rounded-2xl text-secondary">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-subtext text-sm font-medium">Total XP</div>
+            <div className="text-2xl font-bold text-text">{xp} <span className="text-subtext text-lg font-normal">Lvl {level}</span></div>
           </div>
         </div>
       </div>
 
-      {/* Habit List */}
-      <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
+      <div className="bg-card border border-border rounded-3xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">
-            Habits for {selectedDate.toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold text-text">Today's Habits</h2>
+            {errorMsg && (
+              <span className="text-sm text-red-500 bg-red-500/10 px-3 py-1 rounded-lg">
+                {errorMsg}
+              </span>
+            )}
+          </div>
           <button 
-            onClick={() => {
-              if (!isAdding) setMultiSelectDates([selectedDateStr]);
-              setIsAdding(!isAdding);
-              setEveryDaySelected(false);
-            }}
+            onClick={() => setIsAdding(!isAdding)}
             className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
           >
             {isAdding ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
@@ -179,161 +298,123 @@ export default function Habits() {
 
         {isAdding && (
           <motion.form 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             onSubmit={handleAddHabit}
-            className="mb-6 flex flex-col gap-3 p-4 border border-primary/30 bg-primary/5 rounded-2xl"
+            className="mb-6 p-5 bg-background border border-border rounded-2xl flex flex-col gap-4 shadow-sm"
           >
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
+                placeholder="E.g., Read 10 pages..."
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
                 autoFocus
-                placeholder="E.g., Meditate for 10 minutes..."
-                value={newHabitTitle}
-                onChange={(e) => setNewHabitTitle(e.target.value)}
-                className="flex-1 bg-background border border-gray-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                className="flex-1 bg-background border border-border text-text rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
               />
-              <div className="flex gap-2">
-                <button 
-                  onClick={handleSelectEveryDay}
-                  className={`px-4 py-3 border font-medium rounded-xl transition-colors whitespace-nowrap ${everyDaySelected ? 'bg-primary text-white border-primary' : 'bg-background text-primary border-primary/50 hover:bg-primary hover:text-white'}`}
-                >
-                  {everyDaySelected ? '✓ 365 Days Selected' : 'Every Day'}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={multiSelectDates.length === 0}
-                  className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors disabled:opacity-50"
-                >
-                  Add
-                </button>
-              </div>
+              <select
+                value={scheduleType}
+                onChange={(e) => setScheduleType(e.target.value as 'daily' | 'specific')}
+                className="bg-background border border-border text-text rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
+              >
+                <option value="daily">Daily</option>
+                <option value="specific">Specific Days</option>
+              </select>
+              <button 
+                type="submit" 
+                className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-secondary transition-colors whitespace-nowrap"
+              >
+                Add Habit
+              </button>
             </div>
+            
+            <AnimatePresence>
+              {scheduleType === 'specific' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                  className="flex gap-2 flex-wrap"
+                >
+                  {WEEKDAYS_LABELS.map(day => {
+                    const isSelected = selectedDays.includes(day.id);
+                    return (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => setSelectedDays(prev => 
+                          isSelected ? prev.filter(d => d !== day.id) : [...prev, day.id]
+                        )}
+                        className={`w-10 h-10 rounded-full text-sm font-semibold transition-colors flex items-center justify-center ${
+                          isSelected 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'bg-card border border-border text-subtext hover:border-primary'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.form>
         )}
 
-        <div className="space-y-4">
-          {habits.map((habit) => (
-            <motion.div
+        <div className="space-y-3">
+          {habitsScheduledToday.map((habit) => (
+            <motion.div 
               key={habit.id}
               layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className={`group flex items-center justify-between p-4 rounded-2xl border transition-all ${
                 habit.completedToday 
                   ? 'bg-primary/5 border-primary/30 shadow-[0_0_15px_rgba(139,92,246,0.1)]' 
-                  : 'bg-background border-gray-800 hover:border-gray-700'
+                  : 'bg-background border-border hover:border-border'
               }`}
             >
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => toggleHabit(habit.id)}
+              <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleHabit(habit.id, habit.completedToday, habit.streak)}>
+                <button 
+                  disabled={loadingHabits.has(habit.id)}
                   className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                    habit.completedToday
-                      ? 'bg-primary border-primary text-white scale-110'
-                      : 'border-gray-600 text-transparent hover:border-primary'
-                  }`}
+                    habit.completedToday ? 'bg-primary border-primary text-white scale-110' : 'border-gray-600 text-transparent hover:border-primary'
+                  } ${loadingHabits.has(habit.id) ? 'opacity-70 cursor-not-allowed scale-100' : ''}`}
                 >
-                  <Check className="w-4 h-4" />
+                  {loadingHabits.has(habit.id) ? (
+                    <motion.div 
+                      animate={{ rotate: 360 }} 
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }} 
+                      className={`w-4 h-4 border-2 rounded-full border-t-transparent ${habit.completedToday ? 'border-white' : 'border-primary'}`} 
+                    />
+                  ) : (
+                    <Check className="w-5 h-5" />
+                  )}
                 </button>
-                <span className={`text-lg font-medium transition-colors ${habit.completedToday ? 'text-white' : 'text-gray-300'}`}>
-                  {habit.title}
+                <span className={`text-lg font-medium transition-colors ${habit.completedToday ? 'text-subtext line-through' : 'text-text'}`}>
+                  {habit.name}
                 </span>
               </div>
               
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-lg border border-gray-800">
-                <motion.div
-                  animate={habit.completedToday ? { scale: [1, 1.5, 1], rotate: [0, 15, -15, 0] } : {}}
-                  transition={{ duration: 0.5 }}
+              <div className="flex items-center">
+                {habit.streak > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background rounded-lg border border-border mr-2 opacity-80">
+                    <Star className={`w-4 h-4 ${habit.completedToday ? 'text-orange-500 fill-orange-500' : 'text-subtext'}`} />
+                    <span className="text-sm font-bold text-text">{habit.streak}</span>
+                  </div>
+                )}
+                <button 
+                  onClick={() => deleteHabit(habit.id)}
+                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  title="Archive Habit"
                 >
-                  <Flame className={`w-5 h-5 ${habit.streak > 0 ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'text-gray-600'}`} />
-                </motion.div>
-                <span className={`font-bold ${habit.streak > 0 ? 'text-orange-500' : 'text-gray-500'}`}>
-                  {habit.streak}
-                </span>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </motion.div>
           ))}
           
-          {habits.length === 0 && !isAdding && (
-            <div className="text-center py-12 text-muted">
-              <p className="mb-6">No habits yet. Start building your routine!</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {['Morning Workout', 'Read 20 pages', 'Drink 2L Water', 'Meditate 10m', 'Code 1hr'].map(rec => (
-                  <button 
-                    key={rec}
-                    onClick={() => {
-                      setNewHabitTitle(rec);
-                      setIsAdding(true);
-                      setMultiSelectDates([selectedDateStr]);
-                    }}
-                    className="px-4 py-2 rounded-full border border-gray-700 bg-background hover:border-primary hover:text-primary transition-colors text-sm"
-                  >
-                    + {rec}
-                  </button>
-                ))}
-              </div>
+          {habitsScheduledToday.length === 0 && !isAdding && (
+            <div className="text-center py-12 text-subtext">
+              <p>You have no habits scheduled for today. Take a break or add a new one!</p>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Monthly Calendar */}
-      <div className="bg-card border border-gray-800 rounded-3xl p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Monthly Overview</h2>
-          <div className="flex items-center gap-4">
-            <button onClick={prevMonth} className="p-2 bg-background border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors text-white">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <span className="text-primary font-medium bg-primary/10 px-4 py-1.5 rounded-lg min-w-[140px] text-center">
-              {currentMonthName} {currentYear}
-            </span>
-            <button onClick={nextMonth} className="p-2 bg-background border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors text-white">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-            <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((day, index) => {
-            if (day === null) {
-              return <div key={index} className="aspect-square bg-transparent" />;
-            }
-            const dateObj = new Date(currentYear, currentMonthDate.getMonth(), day);
-            const dateStr = getFormatDate(dateObj);
-            
-            const isToday = day === todayDate.getDate() && currentMonthDate.getMonth() === todayDate.getMonth() && currentYear === todayDate.getFullYear();
-            const isSelected = !isAdding && day === selectedDate.getDate() && currentMonthDate.getMonth() === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
-            const isMultiSelected = isAdding && multiSelectDates.includes(dateStr);
-            
-            return (
-              <div 
-                key={index} 
-                onClick={() => handleDayClick(day)}
-                className={`
-                  aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all
-                  bg-background border border-gray-800 cursor-pointer hover:border-gray-600
-                  ${isToday && !isSelected && !isMultiSelected ? 'text-primary font-bold border-primary/50' : ''}
-                  ${isSelected ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(139,92,246,0.3)] text-white font-bold scale-105' : ''}
-                  ${isMultiSelected ? 'bg-secondary/40 border-secondary shadow-[0_0_15px_rgba(217,70,239,0.4)] text-white font-bold scale-105' : ''}
-                  ${!isToday && !isSelected && !isMultiSelected ? 'text-gray-400' : ''}
-                  ${isAdding ? 'hover:bg-secondary/20 hover:border-secondary transition-colors duration-100' : ''}
-                `}
-              >
-                {day}
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>

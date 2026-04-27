@@ -1,23 +1,95 @@
 @import "tailwindcss";
 
-@theme {
-  --color-background: #0B0B12;
-  --color-card: #111827;
-  --color-primary: #8B5CF6;
-  --color-secondary: #A78BFA;
-  --color-text: #E5E7EB;
-  --color-muted: #9CA3AF;
+:root {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --subtext: #475569;
+  --accent: #7c3aed;
+  --sidebar: #f1f5f9;
+  --border: #e2e8f0;
   
+  /* Map existing variables used in app */
+  --color-background: var(--bg);
+  --color-card: var(--card);
+  --color-primary: var(--accent);
+  --color-text: var(--text);
+  --color-muted: var(--subtext);
+  --color-border: var(--border);
+  
+  /* Proper variables for Tailwind utilities */
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-text: var(--text);
+  --color-subtext: var(--subtext);
+  --color-accent: var(--accent);
+  --color-sidebar: var(--sidebar);
+  --color-border: var(--border);
+}
+
+.dark {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #f8fafc;
+  --subtext: #94a3b8;
+  --accent: #7c3aed;
+  --sidebar: #0f172a;
+  --border: #334155;
+  
+  --color-background: var(--bg);
+  --color-card: var(--card);
+  --color-primary: var(--accent);
+  --color-text: var(--text);
+  --color-muted: var(--subtext);
+  --color-border: var(--border);
+
+  /* Proper variables for Tailwind utilities */
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-text: var(--text);
+  --color-subtext: var(--subtext);
+  --color-accent: var(--accent);
+  --color-sidebar: var(--sidebar);
+  --color-border: var(--border);
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-text: var(--text);
+  --color-subtext: var(--subtext);
+  --color-accent: var(--accent);
+  --color-sidebar: var(--sidebar);
+  --color-border: var(--border);
+  
+  --color-background: var(--bg);
+  --color-primary: var(--accent);
+
   --font-sans: "Inter", sans-serif;
 }
 
 @layer base {
   body {
-    background-color: var(--color-background);
-    color: var(--color-text);
+    background-color: var(--bg);
+    color: var(--text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer components {
+  .app-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .dark .app-card {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 }
 
