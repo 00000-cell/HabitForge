@@ -58,11 +58,11 @@ export default function Goals() {
       });
 
       if (newCompletedState) {
-        const xpGained = type === 'weekly' ? 25 : type === 'monthly' ? 50 : 50; // Balanced XP requirement
+        const xpGained = type === 'weekly' ? 25 : type === 'monthly' ? 100 : 500;
         addXp(xpGained);
         triggerConfetti();
       } else {
-        const xpLost = type === 'weekly' ? 25 : type === 'monthly' ? 50 : 50;
+        const xpLost = type === 'weekly' ? 25 : type === 'monthly' ? 100 : 500;
         addXp(-xpLost);
       }
     } catch (err) {

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { doc, updateDoc, collection, addDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, setDoc, getDoc, increment } from 'firebase/firestore';
 
 interface AppContextType {
   xp: number;
@@ -106,7 +106,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        updateDoc(userRef, { xp: newXp }).catch(console.error);
+        updateDoc(userRef, { xp: increment(amount) }).catch(console.error);
       }
       return newXp;
     });

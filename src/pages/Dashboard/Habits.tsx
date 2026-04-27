@@ -29,6 +29,7 @@ export default function Habits() {
   const { addXp, triggerConfetti, user, xp, level } = useAppContext();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [activeGoals, setActiveGoals] = useState<any[]>([]);
   const [newHabitName, setNewHabitName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [loadingHabits, setLoadingHabits] = useState<Set<string>>(new Set());
@@ -62,9 +63,10 @@ export default function Habits() {
     setFetchError(null);
     let habitsLoaded = false;
     let logsLoaded = false;
+    let goalsLoaded = false;
     
     const checkReady = () => {
-      if (habitsLoaded && logsLoaded) {
+      if (habitsLoaded && logsLoaded && goalsLoaded) {
         setIsInitialLoading(false);
       }
     };
@@ -95,7 +97,20 @@ export default function Habits() {
       setIsInitialLoading(false);
     });
 
-    return () => { unsubHabits(); unsubLogs(); };
+    const qGoals = query(collection(db, 'goals'), where('userId', '==', user.uid), where('completed', '==', false));
+    const unsubGoals = onSnapshot(qGoals, (snapshot) => {
+      const gList: any[] = [];
+      snapshot.forEach(d => gList.push({ id: d.id, ...d.data() }));
+      setActiveGoals(gList);
+      goalsLoaded = true;
+      checkReady();
+    }, (err) => {
+      console.error(err);
+      goalsLoaded = true;
+      checkReady();
+    });
+
+    return () => { unsubHabits(); unsubLogs(); unsubGoals(); };
   }, [user]);
 
   // Combine habits with logs to get streak and completedToday
@@ -141,6 +156,23 @@ export default function Habits() {
   const completedCount = habitsScheduledToday.filter(h => h.completedToday).length;
   const bestStreak = habitsWithStats.length > 0 ? Math.max(...habitsWithStats.map(h => h.streak)) : 0;
 
+  const calculateHabitXp = () => {
+    let expectedDailyXp = 5; 
+    let totalGoalDailyXp = 0;
+    activeGoals.forEach(g => {
+      if (g.type === 'weekly') totalGoalDailyXp += 25 / 7;
+      if (g.type === 'monthly') totalGoalDailyXp += 100 / 30;
+      if (g.type === 'yearly') totalGoalDailyXp += 500 / 365;
+    });
+
+    if (totalGoalDailyXp > 0) {
+      const habitsTodayCount = habitsScheduledToday.length || 1; 
+      expectedDailyXp = totalGoalDailyXp / habitsTodayCount;
+    }
+
+    return Math.max(1, Math.round(expectedDailyXp));
+  };
+
   const toggleHabit = async (id: string, currentlyCompleted: boolean, streak: number) => {
     if (!user || loadingHabits.has(id)) return;
     
@@ -163,11 +195,13 @@ export default function Habits() {
       }, { merge: true });
       
       if (newCompletedState) {
-        addXp(5);
+        const xpAmount = calculateHabitXp();
+        addXp(xpAmount);
         const tempStreak = streak + (currentlyCompleted ? 0 : 1);
         if (tempStreak === 7 || tempStreak === 30) triggerConfetti();
       } else {
-        addXp(-5);
+        const xpAmount = calculateHabitXp();
+        addXp(-xpAmount);
       }
     } catch (err) {
       console.error(err);
@@ -181,8 +215,12 @@ export default function Habits() {
     }
   };
 
-  const deleteHabit = async (id: string) => {
+  const deleteHabit = async (id: string, isCompletedToday: boolean) => {
     if (!user) return;
+    if (isCompletedToday) {
+      setErrorMsg("Cannot delete a habit that is already completed today.");
+      return;
+    }
     try {
       await updateDoc(doc(db, 'habits', id), { isActive: false });
     } catch (err) {
@@ -394,18 +432,23 @@ export default function Habits() {
               
               <div className="flex items-center">
                 {habit.streak > 0 && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background rounded-lg border border-border mr-2 opacity-80">
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 bg-background rounded-lg border border-border opacity-80 ${!habit.completedToday ? 'mr-2' : ''}`}>
                     <Star className={`w-4 h-4 ${habit.completedToday ? 'text-orange-500 fill-orange-500' : 'text-subtext'}`} />
                     <span className="text-sm font-bold text-text">{habit.streak}</span>
                   </div>
                 )}
-                <button 
-                  onClick={() => deleteHabit(habit.id)}
-                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                  title="Archive Habit"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {!habit.completedToday && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteHabit(habit.id, habit.completedToday);
+                    }}
+                    className="p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-500/10"
+                    title="Archive Habit"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}
